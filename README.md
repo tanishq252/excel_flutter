@@ -1,9 +1,6 @@
-<<<<<<< HEAD
-# flutter_tflite_trial
-=======
-# flutter_application_working_with_excel
->>>>>>> 69ae593e75e0a0cf5f127ea5fd0510ace53de483
+#Working with excels in flutter
 
-A new Flutter project for working with excel sheets locally and from firebase.
+- Here excel file is fetched from firebase or we can use any static url of excel documents and perform various operations on it
+- In this app elements are displayed fromexcel sheet.
 
 
