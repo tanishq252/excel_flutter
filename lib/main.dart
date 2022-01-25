@@ -1,345 +1,128 @@
-// import 'dart:html';
-import 'dart:async';
 import 'dart:io';
-
-import 'package:flutter/cupertino.dart';
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:tflite/tflite.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:open_file/open_file.dart';
+import 'package:excel/excel.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() {
-  // WidgetsFlutterBinding.ensureInitialized();
-
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Flutter Tflite Demo',
+      title: 'FLutter excel demo',
       theme: ThemeData(
-        brightness: Brightness.dark,
-        backgroundColor: Colors.lightGreenAccent,
-        primaryColor: Colors.greenAccent ,
+        primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(),
+      home: const MyHomePage(title: 'FLutter excel demo'),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
+  const MyHomePage({Key? key, required this.title}) : super(key: key);
+  final String title;
+
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  bool _load = true;
-  bool _gallery = true;
-
-  File _imgToPredict;
-  List _output;
-  final _picker = ImagePicker();
-
-  @override
-  void initState() {
-    super.initState();
-    loadModel().then((value) {
-      setState(() {});
-    });
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    Tflite.close();
-  }
+  late ByteData data;
+  var bytes;
+  var excel;
+  List<Widget> ll = [];
+  late File file;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-          backgroundColor: Colors.deepPurpleAccent,
-          title: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                child: Text(
-                  "Pneumonia Detector",
-                  style: TextStyle(
-                    color: Colors.black54,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              )
-            ],
-          )),
-      body: ListView(
-        children: [
-          Container(
-            padding: EdgeInsets.all(30),
-            decoration: BoxDecoration(
-                gradient: LinearGradient(
-                    begin: Alignment.bottomLeft,
-                    end: Alignment.topRight,
-                    colors: [
-                  // Colors.red,
-                  // Colors.yellow,
-                  Colors.black,
-
-                  Colors.black,
-
-                  Colors.deepPurpleAccent,
-                  Colors.black,
-                  Colors.black,
-
-                  // Colors.blue,
-                ])),
-            child: Container(
-              // height: 750,
-              decoration: BoxDecoration(
-                  // image: ,
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    new BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      blurRadius: 20.0,
-                    ),
-                  ]),
-              // color: Colors.black.withOpacity(0.3),
-
-              padding: EdgeInsets.all(50),
-              child: Column(
-                children: [
-                  Container(
-                    child: Center(
-                      child: (_load == true)
-                          ? Container(
-                              decoration: BoxDecoration(
-                                  // color: Colors.white.withOpacity(0.7),
-                                  ),
-                              height: 400,
-                              width: 400,
-                            )
-                          : Container(
-                              decoration: BoxDecoration(
-                                  // color: Colors.white.withOpacity(0.7),
-                                  ),
-                              child: Column(
-                                children: [
-                                  Container(
-                                      padding: EdgeInsets.fromLTRB(0, 20, 0, 0),
-                                      height: 400,
-                                      width: 300,
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(70),
-                                        child: Image.file(
-                                          _imgToPredict,
-                                          fit: BoxFit.fill,
-                                        ),
-                                      )),
-                                  Divider(
-                                    height: 50,
-                                    thickness: 10,
-                                  ),
-                                  (_output != null)
-                                      ? Text("Result : ${_output[0]['label']}",
-                                          style: TextStyle(
-                                              color: Colors.purple[900],
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 20))
-                                      : Container(
-                                          height: 30,
-                                        ),
-                                  Divider(
-                                    height: 50,
-                                    thickness: 10,
-                                  )
-                                ],
-                              ),
-                            ),
-                    ),
-                  ),
-                  Container(
-                    height: 300,
-                    decoration: BoxDecoration(
-                        // color: Colors.white.withOpacity(0.7),
-                        ),
-                    child: Column(
-                      children: [
-                        GestureDetector(
-                          onTap: () => {
-                            setState(() {
-                              pickImageCamera();
-                              // _gallery = false;
-                              // uploadImage();
-                            })
-                          },
-                          child: Container(
-                            width: 200,
-                            height: 60,
-                            padding: EdgeInsets.all(5),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                    // begin: Alignment.bottomCenter,
-                                    // end: Alignment.topCenter,
-                                    begin: Alignment.bottomLeft,
-                                    end: Alignment.topRight,
-                                    colors: [
-                                      // Colors.red,
-                                      // Colors.yellow,
-                                      Colors.black,
-                                      Colors.black,
-                                      // Colors.grey[800],
-                                      // Colors.purpleAccent,
-                                      // Colors.purpleAccent
-                                    ]),
-                                // color: Colors.lightGreenAccent,
-                                borderRadius: BorderRadius.circular(120),
-                                boxShadow: [
-                                  new BoxShadow(
-                                    color: Colors.black,
-                                    blurRadius: 10.0,
-                                  ),
-                                ]),
-                            child: Text(
-                              "Camera",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Divider(
-                          height: 30,
-                        ),
-                        GestureDetector(
-                          onTap: () => {
-                            setState(() {
-                              pickImageGallery();
-                            })
-                          },
-                          child: Container(
-                            width: 200,
-                            height: 60,
-                            padding: EdgeInsets.all(5),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              boxShadow: [
-                                new BoxShadow(
-                                  color: Colors.black,
-                                  blurRadius: 10.0,
-                                ),
-                              ],
-                              gradient: LinearGradient(
-                                  begin: Alignment.bottomCenter,
-                                  end: Alignment.topCenter,
-                                  // end: Alignment.bottomLeft,
-                                  // begin: Alignment.topRight,
-                                  colors: [
-                                    // Colors.red,
-                                    // Colors.yellow,
-                                    Colors.black,
-                                    Colors.black,
-
-                                    // Colors.purpleAccent
-                                  ]),
-                              // color: Colors.lightGreenAccent,
-                              borderRadius: BorderRadius.circular(120),
-                            ),
-                            child: Text(
-                              "Gallery",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                ],
+        appBar: AppBar(
+          title: Text(widget.title),
+        ),
+        body: ListView(
+          children: <Widget>[
+            ElevatedButton(
+              child: Text("Fetch Data"),
+              onPressed: () => openFile(
+                url:
+                    'https://firebasestorage.googleapis.com/v0/b/official-app-7898d.appspot.com/o/Blockchain%20Workshop%20(Responses).xlsx?alt=media&token=31d13302-e89e-4772-9fde-9bc387a1bc71',
+                fileName: 'sdp.xlsx',
               ),
             ),
-          )
-        ],
+            for (int i = 1; i < ll.length; i++) ll[i],
+          ],
+        ) 
+        );
+  }
+
+  openFile({required String url, String? fileName}) async {
+    // initializinf the file
+    final File? file = await downloadFile(url, fileName!);
+    if (file == null) {
+      return;
+    }
+
+    // below function opens the file just make sure filename is proper along with extension after that
+    OpenFile.open(file.path);
+
+    // further functioning is perfoemed in order to write the fetched data in our mobile storage and read the data of "Email Address" column which can be further modified to create users in firebase authentication
+    var bytes = file.readAsBytesSync();
+    var excel = Excel.decodeBytes(bytes);
+    int counter = 0;
+    int emailIndex=0;
+    for (var table in excel.tables.keys) {
+      print(
+          "---------------------------------------------------------------------------");
+      print("$table");
+
+      print(
+          "---------------------------------------------------------------------------");
+
+      for(var x in excel.tables[table]!.rows[0]){
+        if (x.toString() == "Email Address") {
+            emailIndex = counter;
+            break;
+          }
+          counter++;
+      }
+
+      for (var row in excel.tables[table]!.rows) {
+        print("$row");
+        String local = row[emailIndex].toString();
+        if(local!=null && local!="Email Address"){
+          ll.add(Text("$local"));
+        }
+      }
+    }
+  }
+
+  // this function will help user to store file locally by converting the file present in firebase storage or any other online file in bytes using Dio package and simple return the new file
+  Future<File?> downloadFile(String url, String name) async {
+    final storage = await getApplicationDocumentsDirectory();
+    final File file = File('${storage.path}/$name');
+
+    final response = await Dio().get(
+      url,
+      options: Options(
+        responseType: ResponseType.bytes,
+        followRedirects: false,
+        receiveTimeout: 0,
       ),
     );
-  }
 
-  // main function which can give the output of the model by providing the input
-  // you can refer to tensorflow library aswell to see the exact functioning of runModelOnImage
-  classifyImage(File img) async {
-    var output = await Tflite.runModelOnImage(
-      path: img.path,
-      numResults: 2,
-      threshold: 0.5,
-      imageMean: 150,
-      imageStd: 150,
-    );
-    setState(() {
-      _output = output;
-      _load = false;
-    });
-  }
-
-// the modelwill be loaded from tflite
-  loadModel() async {
-    await Tflite.loadModel(
-        model: 'assets/modelCNN.tflite', labels: 'assets/labels.txt');
-  }
-
-  // image from camera
-  Future pickImageCamera() async {
-    var image = await _picker.getImage(source: ImageSource.camera);
-    if (image == null) {
-      return null;
-    }
-
-    setState(() {
-      _imgToPredict = File(image.path);
-    });
-
-    classifyImage(_imgToPredict);
-  }
-
-  // image from gallery
-  Future pickImageGallery() async {
-    var image = await _picker.getImage(source: ImageSource.gallery);
-    if (image == null) {
-      return null;
-    }
-
-    setState(() {
-      _imgToPredict = File(image.path);
-    });
-
-    classifyImage(_imgToPredict);
-  }
-
-  // for popup we can use this function
-  Future uploadImage() async {
-    final _picker = ImagePicker();
-    PickedFile image;
-    if (PermissionStatus.granted != null) {
-      image = (_gallery)
-          ? (_picker.getImage(source: ImageSource.gallery))
-          : (await _picker.getImage(source: ImageSource.camera));
-      var file = File(image.path);
-      setState(() {
-        _imgToPredict = File(image.path);
-      });
-      classifyImage(_imgToPredict);
-    }
+    final raf = file.openSync(mode: FileMode.write);
+    raf.writeFromSync(response.data);
+    await raf.close();
+    return file;
   }
 }
